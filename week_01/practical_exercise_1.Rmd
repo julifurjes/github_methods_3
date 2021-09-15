@@ -92,7 +92,7 @@ spyder
 ```{python}
 a = 2 + 2
 b = a + 3
-print(b)
+print(b) #:)
 
 a_list = [1, 'a', 2.3] # square brackets initialize lists that can contain any combination of any type of object (an integer, a string and a float in this case)
 ## Note that Python is zero-indexed ()
