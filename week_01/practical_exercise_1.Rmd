@@ -92,7 +92,7 @@ spyder
 ```{python}
 a = 2 + 2
 b = a + 3
-print(b) #:)
+print(b)
 
 a_list = [1, 'a', 2.3] # square brackets initialize lists that can contain any combination of any type of object (an integer, a string and a float in this case)
 ## Note that Python is zero-indexed ()
@@ -168,6 +168,58 @@ Do a linear regression, expressing fuel usage as a function of weight using the 
 ```{r, eval=FALSE}
 data(mtcars)
 model <- lm(formula=..., data=...)
+model
+
+# 1 — Extracting values
+# estimated beta value (the slope)
+Beta_hat <- model$coefficients
+Beta_hat
+# Every time the weight increases by one lb/1000, the fuel usage decreases by 5.344. This seems a bit weird though? 
+
+# Actual Y-values (from data set)
+y_values <- mtcars$mpg
+y_values
+
+# Estimated Y-values (y-hat)
+estimated_y <- predict(model)
+estimated_y
+# these Y-values are predicted based on the model.
+
+# X-values (actual values from data set in design matrix)
+X <- model.matrix(model)
+mtcars$wt
+# can be done in both of the above-seen ways. By using model.matrix, you also get the intercept.
+
+# Epsilon / errors — these are also known as residuals
+residuals <- model$residuals
+# in other words, these are the differences between actual y-values and estimated y-values.
+
+# 1.i 
+library(tidyverse)
+ggplot(mtcars, aes(wt))+
+  geom_point(aes(y=y_values), color = "green")+
+  geom_point(aes(y=estimated_y), color = "red")+
+    geom_line(aes(y=estimated_y), color ="red")+
+  geom_linerange(aes(residuals), ymin = y_values, ymax = estimated_y, x=mtcars$wt, color = "darkgreen")+
+  xlab("Weight in lb/1000") + ylab("Y-values")
+
+# Red line/points are the estimated values
+# Light green points are actual y-values
+# Dark green lines are residuals / epsilon.
+
+# 2 — Quadratic model
+new_X <- as.data.frame(X)
+new_X$wt_squared <- new_X$wt^2
+new_X <- as.matrix(new_X)
+# now we have a matrix with a constant (intercept) of 1, a column containing the actual x-values and one containing squared x-values.
+
+# now, we will estimate the beta-value by using solve-function and a transposed matrix.
+bhat <- solve(t(new_X) %*% new_X) %*% t(new_X) %*% y_values
+bhat
+# both the acquired intercept (49.9) and the slope (-13.38) are quite far from the values of the original model created using lm.
+
+# 3 — Compare the models
+?I
 ```
 1. extract $\hat{\beta}$, $Y$, $\hat{Y}$, $X$ and $\epsilon$ from __model__ (hint: have a look at the function __model.matrix__)  
     i. create a plot that illustrates $Y$ and $\hat{Y}$ (if you are feeling ambitious, also include $\epsilon$ (hint: you can use the function __arrows__))
