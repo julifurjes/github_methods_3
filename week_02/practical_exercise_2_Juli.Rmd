@@ -1,6 +1,6 @@
 ---
 title: "practical_exercise_2, Methods 3, 2021, autumn semester"
-author: 'Juli Fürjes'
+author: '[FILL IN YOUR NAME]'
 date: "[FILL IN THE DATE]"
 output: pdf_document
 ---
