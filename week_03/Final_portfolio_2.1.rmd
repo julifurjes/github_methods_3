@@ -1,7 +1,7 @@
 ---
 title: "practical_exercise_3, Methods 3, 2021, autumn semester"
-author: '[FILL IN YOUR NAME]'
-date: "[FILL IN THE DATE]"
+author: 'Juli Fürjes'
+date: "04/10/2021"
 output: html_document
 ---
 
@@ -13,7 +13,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(readbulk, MuMIn)
+
+pacman::p_load(tidyverse, readbulk, lme4, dplyr, dfoptim, MuMIn)
 ```
 
 # Exercises and objectives
@@ -30,38 +31,27 @@ REMEMBER: This assignment will be part of your final portfolio
 Go to https://osf.io/ecxsj/files/ and download the files associated with Experiment 2 (there should be 29).  
 The data is associated with Experiment 2 of the article at the following DOI https://doi.org/10.1016/j.concog.2019.03.007  
 
-1) Put the data from all subjects into a single data frame
-
+1) Put the data from all subjects into a single data frame  
 ```{r}
 df <- read_bulk(
   directory = 'experiment_2/',
-          fun = read_csv
+  fun = read_csv
   )
 ```
 
-
-2) Describe the data and construct extra variables from the existing variables
-
+2) Describe the data and construct extra variables from the existing variables  
     i. add a variable to the data frame and call it _correct_ (have it be a _logical_ variable). Assign a 1 to each row where the subject indicated the correct answer and a 0 to each row where the subject indicated the incorrect answer (__Hint:__ the variable _obj.resp_ indicates whether the subject answered "even", _e_ or "odd", _o_, and the variable _target_type_ indicates what was actually presented.
-    
 ```{r}
-df$correct <- 2
-for (i in 1:18131) {
-if (df$obj.resp[i] == "o" & df$target.type[i] == "odd" | df$obj.resp[i] == "e" & df$target.type[i] == "even") {
-  df$correct[i] <-  1
-} else {
-  df$correct[i] <-  0
-}
-}
 
+df$correct <- ifelse(df$obj.resp == "o" & df$target.type == "odd" | df$obj.resp == "e" & df$target.type == "even", 1, 0)
+
+class(df$correct)
 df$correct <- as.logical(df$correct)
-```
-    
-    ii. describe what the following variables in the data frame contain, _trial.type_, _pas_, _trial_, _target.contrast_, _cue_, _task_, _target_type_, _rt.subj_, _rt.obj_, _obj.resp_, _subject_ and _correct_. (That means you can ignore the rest of the variables in your description). For each of them, indicate and argue for what `class` they should be classified into, e.g. _factor_, _numeric_ etc.
-    
-```{r}
-glimpse(df)
 
+glimpse(df)
+```
+    ii. describe what the following variables in the data frame contain, _trial.type_, _pas_, _trial_, _target.contrast_, _cue_, _task_, _target_type_, _rt.subj_, _rt.obj_, _obj.resp_, _subject_ and _correct_. (That means you can ignore the rest of the variables in your description). For each of them, indicate and argue for what `class` they should be classified into, e.g. _factor_, _numeric_ etc.  
+```{r}
 df$trial.type <- as.factor(df$trial.type)
   #The staircase trial types were only introduced in experiment 2 and is an adaptive procedure that allows to collect more data at the     threshold visibility. It is not explained what a staircase procedure actually is, but it is used at the beginning of the study before    collecting the actual trials.The other trials are experiment trials.
 
@@ -106,45 +96,46 @@ df$subject <- as.factor(df$subject)
   #our variable indicating with a 1 that the participant answered correctly and a 0 if they answered incorrectly
 ```
     
-    iii. for the staircasing part __only__, create a plot for each subject where you plot the estimated function (on the _target.contrast_ range from 0-1) based on the fitted values of a model (use `glm`) that models _correct_ as dependent on _target.contrast_. These plots will be our _no-pooling_ model. Comment on the fits - do we have enough data to plot the logistic functions?
-    
+    iii. for the staircasing part __only__, create a plot for each subject where you plot the estimated function (on the _target.contrast_ range from 0-1) based on the fitted values of a model (use `glm`) that models _correct_ as dependent on _target.contrast_. These plots will be our _no-pooling_ model. Comment on the fits - do we have enough data to plot the logistic functions?  
 ```{r}
-df_staircase <- filter(df, trial.type == "staircase")
-model.1.2.3 <- glm(correct ~ target.contrast*subject, data= df_staircase, family = binomial(link = "logit"))
-model.1.2.3
+df.1.2.3 <- df %>% 
+  filter(trial.type == "staircase")
 
-df_staircase$fitted_correct <- fitted(model.1.2.3)
+model.1.2.3 <- glm(correct ~ target.contrast*subject, data = df.1.2.3, family = binomial(link = "logit"))
 
-fitted_ggplot <- ggplot(data = df_staircase, aes(x = target.contrast, y = fitted_correct)) +
-  geom_point(aes(target.contrast, fitted_correct), color = "skyblue1")+
+df.1.2.3$fitted_correct <- fitted(model.1.2.3)
+
+ggplot(df.1.2.3, aes(x = target.contrast, y = fitted_correct)) +
+  geom_point(aes(target.contrast, fitted_correct), color = "black") +
   facet_wrap(~ subject) +
   theme_bw()
-fitted_ggplot
+
+
 ```
-    
-    iv. on top of those plots, add the estimated functions (on the _target.contrast_ range from 0-1) for each subject based on partial pooling model (use `glmer` from the package `lme4`) where unique intercepts and slopes for _target.contrast_ are modelled for each _subject_
-    
+      
+    iv. on top of those plots, add the estimated functions (on the _target.contrast_ range from 0-1) for each subject based on partial pooling model (use `glmer` from the package `lme4`) where unique intercepts and slopes for _target.contrast_ are modelled for each _subject_  
 ```{r}
-model.1.2.4 <- glmer(correct ~ target.contrast + (target.contrast|subject), data = df_staircase, family = binomial(link = "logit"))
+model.1.2.4 <- glmer(correct ~ target.contrast + (1 + target.contrast|subject), data = df.1.2.3, family = binomial(link = "logit"))
 model.1.2.4
 summary(model.1.2.4)
 
-df_staircase$fitted_partial <- fitted(model.1.2.4)
+df.1.2.3$fitted_partial <- fitted(model.1.2.4)
 
-fitted_ggplot2 <- ggplot(data = df_staircase, aes(x = target.contrast, y = fitted_correct, color = fitted_partial)) +
-  geom_point(aes(target.contrast, fitted_correct), color = "salmon1")+
-  geom_point(aes(target.contrast, fitted_partial), color = "skyblue1") +
+ggplot(df.1.2.3, aes(x = target.contrast, y = fitted_correct)) +
+  geom_point(aes(target.contrast, fitted_correct), color = "black") +
+  geom_point(aes(target.contrast, fitted_partial), color = "red") +
   facet_wrap(~ subject) +
-  labs(x="Contrast", y="Correctness") +
+  labs()
   theme_bw()
-fitted_ggplot2
 ```
-    
-    v. in your own words, describe how the partial pooling model allows for a better fit for each subject
+  
+    v. in your own words, describe how the partial pooling model allows for a better fit for each subject  
+```{r}
+#  - partial pooling enables us access information across all of the participants
+#  - it improves our estimates throughout individuals
+#  - it illustrates individual variance more
 
-  - partial pooling enables us access information across all of the participants
-  - it improves our estimates throughout individuals
-  - it illustrates individual variance more
+```
 
 ## Exercise 2
 
@@ -228,7 +219,7 @@ print(VarCorr(model.2.3.2), comp='Variance')
     
     iii. in your own words - how could you explain why your model would result in a singular fit?
     
-      - because our second intercept is zero
+      - because our second intercept is zero 
     
 ## Exercise 3
 
@@ -236,7 +227,7 @@ print(VarCorr(model.2.3.2), comp='Variance')
 
 ```{r}
 ## you can start from this if you want to, but you can also make your own from scratch
-library(dplyr) #for renaming
+
 
 counting <- df %>% 
   count(subject, task, pas)
@@ -250,29 +241,144 @@ data.count <- data.count %>%
    rename(count = n)
 
 data.count$count <-  as.numeric(data.count$count)
+data.count$pas <-  as.numeric(data.count$pas)
+data.count$task <-  as.factor(data.count$task)
+data.count$subject <-  as.numeric(data.count$subject)
+
+glimpse(data.count)
+```        
+
+
+2) Now fit a multilevel model that models a unique "slope" for _pas_ for each _subject_ with the interaction between _pas_ and _task_ and their main effects being modelled  
+    i. which family should be used?  
+```{r}
+
+data.count$count <-  as.numeric(data.count$count)
 data.count$pas <-  as.factor(data.count$pas)
 data.count$task <-  as.factor(data.count$task)
 data.count$subject <-  as.factor(data.count$subject)
-```        
 
-2) Now fit a multilevel model that models a unique "slope" for _pas_ for each _subject_ with the interaction between _pas_ and _task_ and their main effects being modelled  
-    i. which family should be used?
-    
-```{r}
-model.3.2.1 <- glmer(count ~ pas * task + (1 + pas | subject), family = poisson, data = data.count)
-model.3.2.1
+model.3.2.0 <- glmer(count ~ pas*task + (1+pas|subject), family = poisson, data = data.count)
+model.3.2.0
+summary(model.3.2.0)
+
+# Poisson family used for count data 
 ```
     
     ii. why is a slope for _pas_ not really being modelled?  
+```{r}
+
+```
+    
     iii. if you get a convergence error, try another algorithm (the default is the _Nelder_Mead_) - try (_bobyqa_) for which the `dfoptim` package is needed. In `glmer`, you can add the following for the `control` argument: `glmerControl(optimizer="bobyqa")` (if you are interested, also have a look at the function `allFit`)
+```{r}
+model.3.2.0 <- glmer(count ~ pas*task + (1+pas|subject), family = poisson, data = data.count, control = glmerControl(optimizer="bobyqa"))
+model.3.2.0
+summary(model.3.2.0)
+```
+    
     iv. when you have a converging fit - fit a model with only the main effects of _pas_ and _task_. Compare this with the model that also includes the interaction  
+```{r}
+
+model.3.2.4 <- glmer(count ~ pas + task + (1+pas|subject), family = poisson, data = data.count, control = glmerControl(optimizer="bobyqa"))
+
+
+```
+    
     v. indicate which of the two models, you would choose and why  
+```{r}
+
+#residuals
+residuals_model1 <- residuals(model.3.2.0)
+residuals_model2 <- residuals(model.3.2.4)
+#residual variance
+rvar_model1<- sum((residuals_model1)^2)
+rvar_model2<- sum((residuals_model2)^2)
+#residual standard deviation 
+sd_model1<- sqrt((sum(residuals_model1)^2/length(residuals_model1)-2))
+sd_model2<- sqrt((sum(residuals_model2)^2/length(residuals_model2)-2))
+#AICs
+AICs <- AIC(model.3.2.0, model.3.2.4) #model1 = with interaction, model2 = without interaction
+
+#Table 
+tibble("model"=c("With Interaction","Without Interaction"), "residual variance"=c(rvar_model1, rvar_model2), "residual sd"=c(sd_model1, sd_model2), "AIC"=c(AIC(model.3.2.0), AIC(model.3.2.4)))
+
+## The model with interaction has a lower residual variance and AIC and residual SD therefore it is the model we would chose 
+
+```
+    
     vi. based on your chosen model - write a short report on what this says about the distribution of ratings as dependent on _pas_ and _task_  
+```{r}
+ggplot(data.count, aes(x = pas, y = count)) +
+  geom_point(aes(pas, count), color = "salmon2") +
+  facet_wrap(~ task) +
+  theme_bw()
+
+# We used this plot to visualize ratings based on pas and task. Across task, the ratings appear the same. Across pas, participants saw singles more clearly which makes sense because they were looking at less. But between pairs and quadruplet, they were very similar. 
+```
+    
     vii. include a plot that shows the estimated amount of ratings for four subjects of your choosing 
-3) Finally, fit a multilevel model that models _correct_ as dependent on _task_ with a unique intercept for each _subject_  
-    i. does _task_ explain performance?
+```{r}
+
+data.count$fitted_correct_2 <- fitted(model.3.2.4)
+
+data.count_2 <- data.count %>% 
+  filter(subject=="1" | subject=="2" | subject=="3" | subject=="4")
+
+ggplot(data.count_2, aes(x = pas, y = fitted_correct)) +
+  geom_point(aes(pas, fitted_correct_2), color = "black") +
+  facet_wrap(~ subject) +
+  theme_bw()
+ 
+```
+    
+3) Finally, fit a multilevel model that models _correct_ as dependent on _task_ with a unique intercept for each _subject_ 
+```{r}
+
+model.3.3.0 <- lmer(correct ~ task + (1|subject), data = df)
+summary(model.3.3.0)
+
+```
+
+    i. does _task_ explain performance?  
+```{r}
+
+r.squaredGLMM(model.3.3.0)
+
+# Task does not explain performance well because it only explains 3.5% of the variance. 
+
+```
+    
     ii. add _pas_ as a main effect on top of _task_ - what are the consequences of that?  
+    
+```{r}
+model.3.3.2 <- lmer(correct ~ task + pas + (1|subject), data = df)
+summary(model.3.3.2) 
+
+# adding pas as a main effect explains a bit more variance, about 18%
+
+r.squaredGLMM(model.3.3.2)
+
+```
+  
     iii. now fit a multilevel model that models _correct_ as dependent on _pas_ with a unique intercept for each _subject_
+```{r}
+model.3.3.3 <- lmer(correct ~ pas + (1|subject), data = df)
+summary(model.3.3.3)
+
+r.squaredGLMM(model.3.3.3)
+```
+    
     iv. finally, fit a model that models the interaction between _task_ and _pas_  and their main effects  
+```{r}
+model.3.3.4 <- lmer(correct ~ pas*task + (1|subject), data = df)
+summary(model.3.3.4)
+r.squaredGLMM(model.3.3.4)
+```
+    
     v. describe in your words which model is the best in explaining the variance in accuracy  
+```{r}
+# We believe our model.3.3.4 explains the variance the best. The r^2 are similar in our 2nd, 3rd, and 4th models. We do think that the task affects the pas rating and therefore the 4th model is the best because it takes into account the interaction between those two variables. 
+```
+    
 
