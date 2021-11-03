@@ -41,6 +41,7 @@ The `--force` flag allows for overwriting
 ## Good to know about _Python_ (in no particular order)
 
 ```{python}
+import matplotlib
 ## assignment is done and only done with "=" (no arrows)
 a = 2
 # a <- 2 # results in a syntax error
@@ -115,13 +116,13 @@ identity[:, 2] = 5 # exchange everything in the second column with 5's
 import matplotlib.pyplot as plt
 plt.figure() # create new figure
 plt.plot([1, 2], [1, 2], 'b-') # plot a blue line
-# plt.show() # show figure
+plt.show() # show figure
 plt.plot([2, 1], [2, 1], 'ro') # scatter plot (red)
-# plt.show()
+plt.show()
 plt.xlabel('a label')
 plt.title('a title')
 plt.legend(['a legend', 'another legend'])
-# plt.show()
+plt.show()
 ```
 
 1) Do a linear regression based on _x_, _X_ and _y_ below (_y_ as the dependent variable) (Exercise 1.1)  
@@ -149,6 +150,10 @@ X = np.zeros(shape=(n_samples, 2))
 X[:, 0] = x ** 0
 X[:, 1] = x ** 1
 
+import matplotlib.pyplot as plt
+plt.figure() # create new figure
+plt.plot([x, y], [x, y], 'b-') # plot a blue line
+plt.show() # show figure
 ```
 
 
