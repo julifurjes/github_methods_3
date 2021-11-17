@@ -122,20 +122,19 @@ summary(model.1.2.4)
 df.1.2.3$fitted_partial <- fitted(model.1.2.4)
 
 ggplot(df.1.2.3, aes(x = target.contrast, y = fitted_correct)) +
-  geom_point(aes(target.contrast, fitted_correct), color = "black") +
-  geom_point(aes(target.contrast, fitted_partial), color = "red") +
+  geom_point(aes(target.contrast, fitted_correct), color = "blue") +
+  geom_point(aes(target.contrast, fitted_partial), color = "salmon1") +
   facet_wrap(~ subject) +
   labs()
   theme_bw()
 ```
   
     v. in your own words, describe how the partial pooling model allows for a better fit for each subject  
-```{r}
-#  - partial pooling enables us access information across all of the participants
-#  - it improves our estimates throughout individuals
-#  - it illustrates individual variance more
 
-```
+      - partial pooling enables us access information across all of the participants
+      - it improves our estimates throughout individuals
+      - it illustrates individual variance more
+
 
 ## Exercise 2
 
