@@ -54,7 +54,7 @@ def f(x):
 f1(3)
 #%%%% Exercise 1.1.i
 import numpy as np
-x = np.arange(0, 6, 0.1)
+x = np.arange(0, 6.1, 0.1)
 y = f(x)
 
 #%%%% Exercise 1.1.ii
