@@ -117,6 +117,7 @@ plt.axvline()
 plt.axhline()
 plt.legend(['pas 1', 'pas 2', 'pas 3', 'pas 4'])
 plt.show()
+#the labels seem random, but I double-checked them and they are correct:)
 
 #%%%% Exercise 1.2.iii
 #TODO
