@@ -34,7 +34,7 @@ path = '/Users/julifurjes/Documents/uni/Methods 3/classes/data'
 data = np.load(join(path, "megmag_data.npy"))
 
 #%%%% Exercise 1.1.i
-data.shape
+print(data.shape)
 
 #%%%% Exercise 1.1.ii
 times = np.arange(-200, 804, 4)
@@ -63,21 +63,23 @@ print(repetition_mean)
 
 #%%%% Exercise 1.1.v
 plt.plot(times, repetition_mean)
-plt.axvline(0)
-plt.axhline(0)
+plt.axvline(0, color="red")
+plt.axhline(0, color="red")
 
 #%%%% Exercise 1.1.vi
 print(np.amax(repetition_mean))
 print(np.unravel_index(np.argmax(repetition_mean), repetition_mean.shape)) #sensor number 73
 
 #%%%% Exercise 1.1.vii
-for i in range(251):
+for i in range(682):
     plt.plot(times, data[i, 73, :])
-    
-plt.axvline(112)
+
+plt.axvline(times[112], color= "red")
 plt.show()
 
 #%%%% Exercise 1.1.viii
+
+#TODO
 
 #%%% Exercise 1.2
 # 2) Now load `pas_vector.npy` (call it `y`). PAS is the same as in Assignment 2, describing the clarity of the subjective experience the subject reported after seeing the briefly presented stimulus  
@@ -90,19 +92,11 @@ y = np.load(join(path, "pas_vector.npy"))
 print(y.shape)
 
 #%%%% Exercise 1.2.ii
-pas1 = []
-pas2 = []
-pas3 = []
-pas4 = []
-for i in range(682):
-    if y[i] == 1:
-      pas1.append(y[i])
-    if y[i] == 2:
-      pas2.append(y[i])
-    if y[i] == 3:
-      pas3.append(y[i])
-    if y[i] == 4:
-     pas4.append(y[i])
+pas1 = np.where(y == 1)
+pas2 = np.where(y == 2)
+pas3 = np.where(y == 3)
+pas4 = np.where(y == 4)
+
 sensor73 = data[:,73,:]      
 avgpas1 = np.mean(sensor73[pas1], axis = 0)
 avgpas2 = np.mean(sensor73[pas2], axis = 0)
@@ -113,13 +107,13 @@ plt.plot(times, avgpas1)
 plt.plot(times, avgpas2)
 plt.plot(times, avgpas3)
 plt.plot(times, avgpas4)
-plt.axvline()
-plt.axhline()
+plt.axvline(color="black")
+plt.axhline(color="black")
 plt.legend(['pas 1', 'pas 2', 'pas 3', 'pas 4'])
 plt.show()
-#the labels seem random, but I double-checked them and they are correct:)
 
 #%%%% Exercise 1.2.iii
+
 #TODO
     
 #%% EXERCISE 2 - Do logistic regression to classify pairs of PAS-ratings  
@@ -145,34 +139,63 @@ plt.show()
 #%%% Exercise 2.1
 
 #%%%% Exercise 2.1.i
-data_1_2 = np.array(pas1 + pas2)
-print(data_1_2.shape)
+pas12 = np.argwhere((y == 1) | (y == 2))
+data_1_2 = np.squeeze(data[pas12,:,:])
 
-#The shape of the data is supposed to be (214, 102, 251) but it is not - need to fix this??
-#it's (214,) because this array only contains the value itself (1 or 2), but no data attached to it. somehow we have to filter our 'data' dataset based on this and then we'll have the right size. no idea how though.
-y_1_2 = []
+print(pas12)
+print(data_1_2)
+
+print(pas12.shape)
+print(pas12.ndim)
+
+y_1_2 = np.squeeze(y[pas12])
+print(y_1_2)
+print(len(y_1_2))
 
 #%%%% Exercise 2.1.ii
-X_1_2 = data_1_2.reshape(-1, 2)
-#Is it supposed to look like this?
+X_1_2 = data_1_2.transpose(0,1,2).reshape(-1, data_1_2.shape[0])
+#BUT the shape of it should be the other way around
+#reshape instead of transpose for the solution?
 print(X_1_2)
 
 #%%%% Exercise 2.1.iii
 from sklearn.preprocessing import StandardScaler
-X_1_2 = StandardScaler.fit_transform(X_1_2)
-#Does not work, probably because the shape is not right..
+sc = StandardScaler()
+X_1_2 = sc.fit_transform(X_1_2)
 
 #%%%% Exercise 2.1.iv
+from sklearn.linear_model import LogisticRegression
+regressor = LogisticRegression(penalty = 'none')
+log_fit = regressor.fit(X_1_2, y_1_2)
+
+log_fit.coef_
+
+print(log_fit)
 
 #%%%% Exercise 2.1.v
+logscore = log_fit.score(X_1_2, y_1_2)
+print(logscore)
+#we are overfitting because we didn't split up the data to train and test
 
 #%%%% Exercise 2.1.vi
+from sklearn.linear_model import LogisticRegression
+np.random.seed(7)
+regressor = LogisticRegression(penalty = 'l1', solver = 'liblinear')
+log_fit_1 = regressor.fit(X_1_2, y_1_2)
+
+log_fit_1.coef_
+
+np.count_nonzero(log_fit_1.coef_) #counting the non-zero coefficients
+
 
 #%%%% Exercise 2.1.vii
+
+#TODO
 
 #%%% Exercise 2.2
 
 #%%%% Exercise 2.2.i
+import sklearn
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 
@@ -199,9 +222,35 @@ def equalize_targets_binary(data, y):
     
     return new_data, new_y
 
+print(data_1_2.shape)
+print(y_1_2.shape)
+
+# Use the function
+data_1_2_equal, y_1_2_equal = equalize_targets_binary(data_1_2, y_1_2)
+
+print(data_1_2_equal.shape)
+print(y_1_2_equal.shape)
+
+# Reshape data into 2d
+X_1_2_equal = data_1_2_equal.reshape(198, -1)
+
+print(X_1_2_equal.shape)
+
+# Scale the data
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler() 
+X_1_2_equal = scaler.fit_transform(X_1_2_equal)
+
 #%%%% Exercise 2.2.iii
+regressor = LogisticRegression(penalty = 'none')
+log_fit_2 = regressor.fit(X_1_2_equal, y_1_2_equal)
+
+skFold = sklearn.model_selection.cross_val_score(log_fit_2, X_1_2_equal, y_1_2_equal, cv=5)
+print(skFold)
 
 #%%%% Exercise 2.2.iv
+
+## function for the cross_val_score beforehand
 
 #%%%% Exercise 2.2.v
 
